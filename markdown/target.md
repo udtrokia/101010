@@ -1,12 +1,17 @@
 #### 足够轻的节点
 
 + 有关原生应用
-  + 代码上嵌入
++ 代码上嵌入
   + 网络请求
   + app 跳转调用
   + 其他？
 
 + 交易共识问题
+  + 一定需要造币厂吗
+  + 一定需要共识吗？
+  + 如果进行切片
+    + 切片后的节点稳定性问题？
+    + 
   + 零知识共识？
   + 广播问题
 
@@ -20,3 +25,35 @@
   + ICO
   + POS? && Storage Size
 
+
+
+# 42
+
+
+
+### 交易场景 
+
+近场交易 || 跨区域交易 => 区域划分 => 分层共识
+
+
+
+### 原型 - Bitcoin && Gunjs
+
+__Bitcoin:__
+
++ Crypto
++ Recordable transactions
+
+__Gunjs:__
+
++ Distributed
++ Consensus
+
+
+
+### 收益
+
++ Proof of Concept
++ ip scope convert node support
+  + release in time
+  
