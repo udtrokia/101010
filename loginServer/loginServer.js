@@ -3,8 +3,12 @@ const passport = require('passport');
 const cookieSession = require('cookie-session');
 
 const GoogleStrategy = require('passport-google-oauth20');
-const sqlite = require('sqlite3');
+const sqlite = require('sqlite3').verbose();
+const db = new sqlite.Database('flipcard.db');
 
+function createTable() {
+    db.run("CREATE TABLE user(first_name text, last_name text, google_id text)");
+}
 
 // Google login credentials, used when the user contacts
 // Google, to tell them where he is trying to login to, and show
@@ -12,10 +16,17 @@ const sqlite = require('sqlite3');
 // Google will respond with a key we can use to retrieve profile
 // information, packed into a redirect response that redirects to
 // server162.site:[port]/auth/redirect
+// 908381806969-c38r3v6otndeli259f07lv588l6k0u3v.apps.googleusercontent.com
+// E11xsFZtW566weeJ4KkcEFx9
+// const googleLoginData = {
+//     clientID: '472036695689-s9n5kubr2kuqftbvk0ujl67i324njo3p.apps.googleusercontent.com',
+//     clientSecret: 'W-edC3ifbkX9nxSDoNheWPca',
+//     callbackURL: '/auth/redirect'
+// };
 const googleLoginData = {
-    clientID: '472036695689-s9n5kubr2kuqftbvk0ujl67i324njo3p.apps.googleusercontent.com',
-    clientSecret: 'W-edC3ifbkX9nxSDoNheWPca',
-    callbackURL: '/auth/redirect'
+    clientID: '908381806969-c38r3v6otndeli259f07lv588l6k0u3v.apps.googleusercontent.com',
+    clientSecret: 'E11xsFZtW566weeJ4KkcEFx9',
+    callbackURL: 'auth/redirect'
 };
 
 // Strategy configuration. 
@@ -59,7 +70,10 @@ app.get('/*',express.static('public'));
 // Google. The object { scope: ['profile'] } says to ask Google
 // for their user profile information.
 app.get('/auth/google',
-	passport.authenticate('google',{ scope: ['profile'] }) );
+	passport.authenticate(
+	    'google',{ scope: ['profile'] }
+	)
+       );
 // passport.authenticate sends off the 302 response
 // with fancy redirect URL containing request for profile, and
 // client ID string to identify this app. 
@@ -100,7 +114,7 @@ app.get('/query', function (req, res) { res.send('HTTP query!') });
 app.use( fileNotFound );
 
 // Pipeline is ready. Start listening!  
-app.listen(30057, function (){console.log('Listening...');} );
+app.listen(80, '0.0.0.0');
 
 
 // middleware functions
@@ -148,7 +162,7 @@ function gotProfile(accessToken, refreshToken, profile, done) {
     // Second arg to "done" will be passed into serializeUser,
     // should be key to get user out of database.
 
-    let dbRowID = 1;  // temporary! Should be the real unique
+    let dbRowID = profile.id;  // temporary! Should be the real unique
     // key for db Row for this user in DB table.
     // Note: cannot be zero, has to be something that evaluates to
     // True.  
