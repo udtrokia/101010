@@ -4,12 +4,21 @@ const cookieSession = require('cookie-session');
 
 const GoogleStrategy = require('passport-google-oauth20');
 const sqlite = require('sqlite3').verbose();
-const db = new sqlite.Database('flipcard.db');
+const db = new sqlite.Database('flipcard.db', createTable);
 
 function createTable() {
-    db.run("CREATE TABLE user(first_name text, last_name text, google_id text)");
+  db.run("CREATE TABLE IF NOT EXISTS user(google_id text primary key, first_name text, last_name text)");
 }
 
+function updateUser(id, arg) {
+  db.all(`SELECT google_id FROM user where google_id = '${id}'`, (err, rows) => {
+    if (rows.length === 0) {
+      db.run(`INSERT INTO user (first_name, last_name, google_id) VALUES ('hello', 'world', '${id}')`);
+    }
+  });
+}
+
+// db.close();
 // Google login credentials, used when the user contacts
 // Google, to tell them where he is trying to login to, and show
 // that this domain is registered for this service. 
@@ -24,9 +33,9 @@ function createTable() {
 //     callbackURL: '/auth/redirect'
 // };
 const googleLoginData = {
-    clientID: '908381806969-c38r3v6otndeli259f07lv588l6k0u3v.apps.googleusercontent.com',
-    clientSecret: 'E11xsFZtW566weeJ4KkcEFx9',
-    callbackURL: 'auth/redirect'
+  clientID: '908381806969-c38r3v6otndeli259f07lv588l6k0u3v.apps.googleusercontent.com',
+  clientSecret: 'E11xsFZtW566weeJ4KkcEFx9',
+  callbackURL: 'http://odditypark.com/auth/redirect'
 };
 
 // Strategy configuration. 
@@ -50,9 +59,9 @@ app.use('/', printURL);
 // Will get cookies out of request, decrypt and check if 
 // session is still going on. 
 app.use(cookieSession({
-    maxAge: 6 * 60 * 60 * 1000, // Six hours in milliseconds
-    // meaningless random string used by encryption
-    keys: ['hanger waldo mercy dance']  
+  maxAge: 6 * 60 * 60 * 1000, // Six hours in milliseconds
+  // meaningless random string used by encryption
+  keys: ['hanger waldo mercy dance']  
 }));
 
 // Initializes request object for further handling by passport
@@ -69,11 +78,7 @@ app.get('/*',express.static('public'));
 // Kicks off login process by telling Browser to redirect to
 // Google. The object { scope: ['profile'] } says to ask Google
 // for their user profile information.
-app.get('/auth/google',
-	passport.authenticate(
-	    'google',{ scope: ['profile'] }
-	)
-       );
+app.get('/auth/google', passport.authenticate('google',{ scope: ['profile'] }));
 // passport.authenticate sends off the 302 response
 // with fancy redirect URL containing request for profile, and
 // client ID string to identify this app. 
@@ -81,31 +86,31 @@ app.get('/auth/google',
 // Google redirects here after user successfully logs in
 // This route has three handler functions, one run after the other. 
 app.get('/auth/redirect',
-	// for educational purposes
-	function (req, res, next) {
-	    console.log("at auth/redirect");
-	    next();
-	},
-	// This will issue Server's own HTTPS request to Google
-	// to access the user's profile information with the 
-	// temporary key we got in the request. 
-	passport.authenticate('google'),
-	// then it will run the "gotProfile" callback function,
-	// set up the cookie, call serialize, whose "done" 
-	// will come back here to send back the response
-	// ...with a cookie in it for the Browser! 
-	function (req, res) {
-	    console.log('Logged in and using cookies!')
-	    res.redirect('/user/hello.html');
-	});
+  // for educational purposes
+  function (req, res, next) {
+    console.log("at auth/redirect");
+    next();
+  },
+  // This will issue Server's own HTTPS request to Google
+  // to access the user's profile information with the 
+  // temporary key we got in the request. 
+  passport.authenticate('google'),
+  // then it will run the "gotProfile" callback function,
+  // set up the cookie, call serialize, whose "done" 
+  // will come back here to send back the response
+  // ...with a cookie in it for the Browser! 
+  function (req, res) {
+    console.log('Logged in and using cookies!')
+    res.redirect('/user/hello.html');
+  });
 
 // static files in /user are only available after login
 app.get('/user/*',
-	isAuthenticated, // only pass on to following function if
-	// user is logged in 
-	// serving files that start with /user from here gets them from ./
-	express.static('.') 
-       ); 
+  isAuthenticated, // only pass on to following function if
+  // user is logged in 
+  // serving files that start with /user from here gets them from ./
+  express.static('.') 
+); 
 
 // next, all queries (like translate or store or get...
 app.get('/query', function (req, res) { res.send('HTTP query!') });
@@ -114,38 +119,38 @@ app.get('/query', function (req, res) { res.send('HTTP query!') });
 app.use( fileNotFound );
 
 // Pipeline is ready. Start listening!  
-app.listen(80, '0.0.0.0');
+app.listen(3000, '0.0.0.0');
 
 
 // middleware functions
 
 // print the url of incoming HTTP request
 function printURL (req, res, next) {
-    console.log(req.url);
-    next();
+  console.log(req.url);
+  next();
 }
 
 // function to check whether user is logged when trying to access
 // personal data
 function isAuthenticated(req, res, next) {
-    if (req.user) {
-	console.log("Req.session:",req.session);
-	console.log("Req.user:",req.user);
-	next();
-    } else {
-	res.redirect('/login.html');  // send response telling
-	// Browser to go to login page
-    }
+  if (req.user) {
+    console.log("Req.session:",req.session);
+    console.log("Req.user:",req.user);
+    next();
+  } else {
+    res.redirect('/login.html');  // send response telling
+    // Browser to go to login page
+  }
 }
 
 
 // function for end of server pipeline
 function fileNotFound(req, res) {
-    let url = req.url;
-    res.type('text/plain');
-    res.status(404);
-    res.send('Cannot find '+url);
-    }
+  let url = req.url;
+  res.type('text/plain');
+  res.status(404);
+  res.send('Cannot find '+url);
+}
 
 // Some functions Passport calls, that we can use to specialize.
 // This is where we get to write our own code, not just boilerplate. 
@@ -156,26 +161,27 @@ function fileNotFound(req, res) {
 // is called (in /auth/redirect/),
 // once we actually have the profile data from Google. 
 function gotProfile(accessToken, refreshToken, profile, done) {
-    console.log("Google profile",profile);
-    // here is a good place to check if user is in DB,
-    // and to store him in DB if not already there. 
-    // Second arg to "done" will be passed into serializeUser,
-    // should be key to get user out of database.
+  console.log("Google profile",profile);
+  
+  // here is a good place to check if user is in DB,
+  // and to store him in DB if not already there. 
+  // Second arg to "done" will be passed into serializeUser,
+  // should be key to get user out of database.
 
-    let dbRowID = profile.id;  // temporary! Should be the real unique
-    // key for db Row for this user in DB table.
-    // Note: cannot be zero, has to be something that evaluates to
-    // True.  
+  let dbRowID = profile.id;  // temporary! Should be the real unique
+  // key for db Row for this user in DB table.
+  // Note: cannot be zero, has to be something that evaluates to
+  // True.  
 
-    done(null, dbRowID); 
+  done(null, dbRowID); 
 }
 
 // Part of Server's sesssion set-up.  
 // The second operand of "done" becomes the input to deserializeUser
 // on every subsequent HTTP request with this session's cookie. 
 passport.serializeUser((dbRowID, done) => {
-    console.log("SerializeUser. Input is",dbRowID);
-    done(null, dbRowID);
+  console.log("SerializeUser. Input is",dbRowID);
+  done(null, dbRowID);
 });
 
 // Called by passport.session pipeline stage on every HTTP request with
@@ -184,10 +190,10 @@ passport.serializeUser((dbRowID, done) => {
 // Whatever we pass in the "done" callback becomes req.user
 // and can be used by subsequent middleware.
 passport.deserializeUser((dbRowID, done) => {
-    console.log("deserializeUser. Input is:", dbRowID);
-    // here is a good place to look up user data in database using
-    // dbRowID. Put whatever you want into an object. It ends up
-    // as the property "user" of the "req" object. 
-    let userData = {userData: "data from db row goes here"};
-    done(null, userData);
+  console.log("deserializeUser. Input is:", dbRowID);
+  // here is a good place to look up user data in database using
+  // dbRowID. Put whatever you want into an object. It ends up
+  // as the property "user" of the "req" object. 
+  let userData = {userData: "data from db row goes here"};
+  done(null, userData);
 });
