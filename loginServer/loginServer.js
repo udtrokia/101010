@@ -13,7 +13,7 @@ function createTable() {
 function updateUser(id, arg) {
   db.all(`SELECT google_id FROM user where google_id = '${id}'`, (err, rows) => {
     if (rows.length === 0) {
-      db.run(`INSERT INTO user (first_name, last_name, google_id) VALUES ('hello', 'world', '${id}')`);
+      db.run(`INSERT INTO user (first_name, last_name, google_id) VALUES ('${arg.first_name}', '${arg.last_name}', '${id}')`);
     }
   });
 }
@@ -162,7 +162,11 @@ function fileNotFound(req, res) {
 // once we actually have the profile data from Google. 
 function gotProfile(accessToken, refreshToken, profile, done) {
   console.log("Google profile",profile);
-  
+
+  updateUser(profile.id, {
+    first_name: profile.name.givenName,
+    last_name: profile.name.familyName
+  })
   // here is a good place to check if user is in DB,
   // and to store him in DB if not already there. 
   // Second arg to "done" will be passed into serializeUser,
@@ -193,7 +197,10 @@ passport.deserializeUser((dbRowID, done) => {
   console.log("deserializeUser. Input is:", dbRowID);
   // here is a good place to look up user data in database using
   // dbRowID. Put whatever you want into an object. It ends up
-  // as the property "user" of the "req" object. 
+  // as the property "user" of the "req" object.
   let userData = {userData: "data from db row goes here"};
-  done(null, userData);
+  db.all(`SELECT * FROM user WHERE google_id = '${dbRowID}'`, (err, rows) => {
+    userData = rows[0];
+    done(null, userData);
+  })
 });
