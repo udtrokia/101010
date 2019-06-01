@@ -1,3 +1,29 @@
+const DOMAIN = 'http://odditypark.com'
+const CLIENT_ID = '908381806969-c38r3v6otndeli259f07lv588l6k0u3v.apps.googleusercontent.com';
+const CLIENT_SECRET = 'E11xsFZtW566weeJ4KkcEFx9';
+
+/* GOOGLE API */
+// db.close();
+// Google login credentials, used when the user contacts
+// Google, to tell them where he is trying to login to, and show
+// that this domain is registered for this service. 
+// Google will respond with a key we can use to retrieve profile
+// information, packed into a redirect response that redirects to
+// server162.site:[port]/auth/redirect
+// 908381806969-c38r3v6otndeli259f07lv588l6k0u3v.apps.googleusercontent.com
+// E11xsFZtW566weeJ4KkcEFx9
+// const googleLoginData = {
+//     clientID: '472036695689-s9n5kubr2kuqftbvk0ujl67i324njo3p.apps.googleusercontent.com',
+//     clientSecret: 'W-edC3ifbkX9nxSDoNheWPca',
+//     callbackURL: '/auth/redirect'
+// };
+const googleLoginData = {
+  clientID: CLIENT_ID,
+  clientSecret: CLIENT_SECRET,
+  callbackURL: `${DOMAIN}/auth/redirect`
+};
+
+
 /* MOCK CARDS */
 let cards = [{
   seen: 0,
@@ -75,26 +101,6 @@ function updateUser(id, arg) {
     }
   });
 }
-
-// db.close();
-// Google login credentials, used when the user contacts
-// Google, to tell them where he is trying to login to, and show
-// that this domain is registered for this service. 
-// Google will respond with a key we can use to retrieve profile
-// information, packed into a redirect response that redirects to
-// server162.site:[port]/auth/redirect
-// 908381806969-c38r3v6otndeli259f07lv588l6k0u3v.apps.googleusercontent.com
-// E11xsFZtW566weeJ4KkcEFx9
-// const googleLoginData = {
-//     clientID: '472036695689-s9n5kubr2kuqftbvk0ujl67i324njo3p.apps.googleusercontent.com',
-//     clientSecret: 'W-edC3ifbkX9nxSDoNheWPca',
-//     callbackURL: '/auth/redirect'
-// };
-const googleLoginData = {
-  clientID: '908381806969-c38r3v6otndeli259f07lv588l6k0u3v.apps.googleusercontent.com',
-  clientSecret: 'E11xsFZtW566weeJ4KkcEFx9',
-  callbackURL: 'http://odditypark.com/auth/redirect'
-};
 
 // Strategy configuration. 
 // Tell passport we will be using login with Google, and
