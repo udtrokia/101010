@@ -112,9 +112,32 @@ class Card extends React.Component {
     cbs: '',
     seen: 0,
     correct: 0,
-    user: 'David Bowie'
+    user: 'David Bowie',
+    timeFlag: 0,
+    currentSeen: 15,
+    score: 0
   }
 
+  componentDidMount() {
+    this.counter()
+  }
+  
+  counter() {
+    let counter = setInterval(() => {
+      this.setState({
+	currentSeen: this.state.currentSeen - 1
+      })
+      if (this.state.currentSeen <= 1) {
+	clearInterval(counter);
+	this.handleFlip('reset');
+	this.setState({
+	  currentSeen: 15
+	})
+	this.counter();
+      }
+    }, 1000)
+  }
+  
   handleChange(e) {
     /* check if correct */
     if (
@@ -140,7 +163,19 @@ class Card extends React.Component {
   }
 
   handleFlip(e) {
+    if (e === 'reset') {
+      this.setState({
+	ptr: this.state.ptr + 1
+      })
+      this.setState({
+	answer: vbs[this.state.ptr].answer
+      })
+      return;
+    }
     if (e.key == 'Enter') {
+      this.setState({
+	currentSeen: 15
+      });
       if (this.state.answer == 'Correct!') {
 	this.setState({
 	  correct: this.state.corrent + 1
@@ -185,9 +220,15 @@ class Card extends React.Component {
             <CardBack text={this.state.answer} />
           </div>
 	</div>
-	<div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end'}}>
-	  <div>Seen: {this.state.seen} <br/> Correct: {this.state.correct} </div>
-	  <div style={{textAlign: 'right'}}>{this.state.user}</div>
+	<div className='footer'>
+	  <div>
+	    Seen: {this.state.seen} <br/>
+	    Correct: {this.state.correct} <br/>
+	    CurrentSeen: {this.state.currentSeen}</div>
+	  <div style={{textAlign: 'right'}}>
+	    {this.state.score} <br/>
+	    {this.state.user}
+	  </div>
 	</div>
       </div>
     )
