@@ -9,31 +9,49 @@
 
 const cardContainer = document.querySelector('.react-card');
 
-const vbs = [{
+let vbs = [{
+  seen: 0,
+  correct: 0,
+  score: 15,
   answer: 'starting',
   riddle: 'What 8 letter word can have a letter taken away and it still makes a word. Take another letter away and it still makes a word. Keep on doing that until you have one letter left. What is the word?'
 }, {
+  seen: 0,
+  correct: 0,
   answer: 'Racecar',
   riddle: 'What 7 letter word is spelled the same way backwards and forewards?'
 }, {
+  correct: 0,
   answer: 'NOON',
   riddle: 'What 4-letter word can be written forward, backward or upside down, and can still be read from left to right?'
 }, {
+  seen: 0,
+  correct: 0,
   answer: 'SWIMS',
   riddle: 'What 5 letter word typed in all capital letters can be read the same upside down?'
 }, {
+  seen: 0,
+  correct: 0,
   answer: 'Alphabet',
   riddle: 'What word contains all of the twenty six letters?'
 }, {
+  seen: 0,
+  correct: 0,
   answer: 'Ton',
   riddle: 'Foward I am heavy, but backward I am not. What am I?',
 }, {
+  seen: 0,
+  correct: 0,
   answer: 'Dozens',
   riddle: 'I am six letters. When you take one away I am twelve. What am I?'
 }, {
+  seen: 0,
+  correct: 0,
   answer: 'Queue',
   riddle: 'What English word retains the same pronunciation, even after you take away four of its five letters?'
 }, {
+  seen: 0,
+  correct: 0,
   answer: 'Heroine',
   riddle: 'There is a word in the English language in which the first two letters signify a male, the first three letters signify a female, the first four signify a great man, and the whole word, a great woman. What is the word?'
 }];
@@ -103,44 +121,32 @@ class CardBack extends React.Component {
 // React component for the card (main component)
 class Card extends React.Component {
   state = {
-    vbs: vbs,
+    vbs: [{riddle: ''}],
     ptr: 0,
     text: '',
-    answer: vbs[0].answer,
+    answer: '',
     sfs: '',
     cbs: '',
-    seen: 0,
-    correct: 0,
-    user: 'David Bowie',
-    timeFlag: 0,
-    currentSeen: 15,
-    score: 0
+    user: '',
   }
 
-  componentDidMount() {
-    this.counter()
-  }
-  
-  counter() {
-    let counter = setInterval(() => {
+  componentWillMount() {
+    fetch('/userinfo').then( r => {
+      return r.json()
+    }).then(j => {
       this.setState({
-	currentSeen: this.state.currentSeen - 1
+	user: j.first_name,
+	vbs: vbs,
+	ptr: 0,
+	answer: vbs[0].answer
       })
-      if (this.state.currentSeen <= 1) {
-	clearInterval(counter);
-	this.handleFlip('reset');
-	this.setState({
-	  currentSeen: 15
-	})
-	this.counter();
-      }
-    }, 1000)
+    })
   }
   
   handleChange(e) {
     /* check if correct */
     if (
-      e.target.value == vbs[this.state.ptr].answer
+      e.target.value == this.state.vbs[this.state.ptr].answer
 	&& this.state.answer !== 'Correct!'
     ) {
       this.setState({
@@ -151,79 +157,90 @@ class Card extends React.Component {
     /* if correct after */
     if (
       this.state.answer == 'Correct!'
-	&& e.target.value !== vbs[this.state.ptr].answer
+	&& e.target.value !== this.state.vbs[this.state.ptr].answer
     ) {
       this.setState({
-	answer: vbs[this.state.ptr].answer
+	answer: this.state.vbs[this.state.ptr].answer
       })
     }
     
     this.setState({ text: e.target.value })
   }
 
-  handleFlip(e) {
-    if (e === 'reset') {
-      this.setState({
-	ptr: this.state.ptr + 1
-      })
-      this.setState({
-	answer: vbs[this.state.ptr].answer
-      })
-      return;
+  /* next card */
+  nc() {
+    let card = this.state.vbs[this.state.ptr]
+    
+    let correct = card.correct;
+    let seen = card.seen;
+    let max = Math.max;
+    let score = Math.floor(
+      max(1, 5 - correct)
+	+ max(1,5-seen)
+	+ 5 * ((seen-correct)/seen)
+    );
+    
+    let random = Math.floor(Math.random() * 15);
+    let card_ptr = Math.floor(Math.random() * 9);
+    while (random > this.state.vbs[card_ptr].score) {
+      random = Math.floor(Math.random() * 15);
+      card_ptr = Math.floor(Math.random() * 9);
     }
+
+    return card_ptr;
+  }
+  
+  handleFlip(e) {
     if (e.key == 'Enter') {
-      let correct = this.state.correct;
-      let seen = this.state.currentSeen;
-      let max = Math.max;
-      let score = Math.floor(
-	max(1, 5 - correct)
-	  + max(1,5-seen)
-	  + 5 * ((seen-correct)/seen)
-      );
+      fetch(`/update_seen`)
+	.then(r => {
+	  return r.json()
+	}).then(r => {
+	  console.log(r);
+	})
       
       this.setState({
-	currentSeen: 15,
 	sfs: 'side-front',
 	cbs: 'card-body',
-	seen: this.state.seen + 1
       });
 
       if (this.state.answer == 'Correct!') {
-	this.setState({
-	  correct: this.state.correct + 1,
-	  score: this.state.score + score,
-	})
+	fetch(`/update_correct`)
+	  .then(r => {
+	    return r.json();
+	  })
+	  .then(r => {
+	    console.log(r);
+	  })
       }
 
       setTimeout(() => {
 	this.setState({
 	  sfs: 'hidden',
 	  cbs: 'hidden',
-	  text: ''	  
+	  text: '',
+	  ptr: this.nc()
 	})
-	if (this.state.ptr <= 8) {
-	  this.setState({ ptr: this.state.ptr + 1 })
-	}
       }, 2000)
 
       setTimeout(() => {
 	this.setState({
 	  sfs: '',
 	  cbs: '',
-	  answer: vbs[this.state.ptr].answer,
-	  currentSeen: 15
+	  answer: this.state.vbs[this.state.ptr].answer,
 	})	
       }, 3000)
     }
   }
   
   render() {
+    console.log(this.state)
     return(
       <div style={{margin: '0 2rem'}}>
 	<div className='card-container' onKeyPress={this.handleFlip.bind(this)}>
           <div className={this.state.cbs}>
 	    <CardFront
-	      text={vbs[this.state.ptr].riddle}
+	      text={this.state.vbs[this.state.ptr].riddle}
 	      value={this.state.text}
 	      hc={this.handleChange.bind(this)}
 	      sfs={this.state.sfs}
@@ -233,11 +250,11 @@ class Card extends React.Component {
 	</div>
 	<div className='footer'>
 	  <div>
-	    Seen: {this.state.seen} <br/>
-	    Correct: {this.state.correct} <br/>
-	    CurrentSeen: {this.state.currentSeen}</div>
+	    Seen: {this.state.vbs[this.state.ptr].seen} <br/>
+	    Correct: {this.state.vbs[this.state.ptr].correct}
+	  </div>
 	  <div style={{textAlign: 'right'}}>
-	    {this.state.score} <br/>
+	    {this.state.vbs[this.state.ptr].score} <br/>
 	    {this.state.user}
 	  </div>
 	</div>

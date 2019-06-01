@@ -1,3 +1,52 @@
+/* MOCK CARDS */
+let cards = [{
+  seen: 0,
+  correct: 0,
+  answer: 'starting',
+  riddle: 'What 8 letter word can have a letter taken away and it still makes a word. Take another letter away and it still makes a word. Keep on doing that until you have one letter left. What is the word?'
+}, {
+  seen: 0,
+  correct: 0,
+  answer: 'Racecar',
+  riddle: 'What 7 letter word is spelled the same way backwards and forewards?'
+}, {
+  correct: 0,
+  answer: 'NOON',
+  riddle: 'What 4-letter word can be written forward, backward or upside down, and can still be read from left to right?'
+}, {
+  seen: 0,
+  correct: 0,
+  answer: 'SWIMS',
+  riddle: 'What 5 letter word typed in all capital letters can be read the same upside down?'
+}, {
+  seen: 0,
+  correct: 0,
+  answer: 'Alphabet',
+  riddle: 'What word contains all of the twenty six letters?'
+}, {
+  seen: 0,
+  correct: 0,
+  answer: 'Ton',
+  riddle: 'Foward I am heavy, but backward I am not. What am I?',
+}, {
+  seen: 0,
+  correct: 0,
+  answer: 'Dozens',
+  riddle: 'I am six letters. When you take one away I am twelve. What am I?'
+}, {
+  seen: 0,
+  correct: 0,
+  answer: 'Queue',
+  riddle: 'What English word retains the same pronunciation, even after you take away four of its five letters?'
+}, {
+  seen: 0,
+  correct: 0,
+  answer: 'Heroine',
+  riddle: 'There is a word in the English language in which the first two letters signify a male, the first three letters signify a female, the first four signify a great man, and the whole word, a great woman. What is the word?'
+}];
+
+
+// modules
 const express = require('express');
 const passport = require('passport');
 const cookieSession = require('cookie-session');
@@ -6,8 +55,20 @@ const GoogleStrategy = require('passport-google-oauth20');
 const sqlite = require('sqlite3').verbose();
 const db = new sqlite.Database('flipcard.db', createTable);
 
+function insertCard(card) {
+  // console.log(card)
+  db.run(`INSERT INTO card (answer, riddle, seen, correct) VALUES ('${card.answer}', '${card.riddle}', '${card.seen}', '${card.correct}')`);
+  // db.run(`INSERT INTO card (answer riddle seen correct) VALUES ('${card.answer}', '${card.riddle}', '${card.seen}', '${card.correct}')`, (err) => {
+  //   console.log(err);
+  // });
+}
+
 function createTable() {
-  db.run("CREATE TABLE IF NOT EXISTS user(google_id text primary key, first_name text, last_name text)");
+  db.run("CREATE TABLE IF NOT EXISTS user(google_id text primary key, first_name text, last_name text, seen number, correct number)");
+  db.run("CREATE TABLE IF NOT EXISTS card(answer text primary key, riddle text, seen number, correct number)", (err) => {
+    cards.map(e => insertCard(e));
+  });
+  
 }
 
 function updateUser(id, arg) {
@@ -101,7 +162,7 @@ app.get('/auth/redirect',
   // ...with a cookie in it for the Browser! 
   function (req, res) {
     console.log('Logged in and using cookies!')
-    res.redirect('/user/hello.html');
+    res.redirect('/user/review.html');
   });
 
 // static files in /user are only available after login
@@ -114,6 +175,35 @@ app.get('/user/*',
 
 // next, all queries (like translate or store or get...
 app.get('/query', function (req, res) { res.send('HTTP query!') });
+
+app.get('/userinfo', isAuthenticated, function(req, res) {
+  res.json(req.user)
+})
+
+app.get('/update_seen', isAuthenticated, (req, res) => {
+  db.get(`SELECT * FROM user WHERE google_id = '${req.user.google_id}'`, (err, row) => {
+    db.run(`UPDATE user SET seen = ${row.seen + 1} WHERE google_id = '${req.user.google_id}'`, (err, ret) => {
+      if (err == null) {
+	res.json({code: true});
+      } else {
+	res.json({code: false});
+      }
+    });
+  })  
+})
+
+app.get('/update_correct', isAuthenticated, (req, res) => {
+  db.get(`SELECT * FROM user WHERE google_id = '${req.user.google_id}'`, (err, row) => {
+    db.run(`UPDATE user SET correct = ${row.correct + 1} WHERE google_id = '${req.user.google_id}'`, (err, ret) => {
+      if (err == null) {
+	res.json({code: true});
+      } else {
+	res.json({code: false});
+      }
+    });
+  })  
+})
+
 
 // finally, not found...applies to everything
 app.use( fileNotFound );
@@ -198,9 +288,9 @@ passport.deserializeUser((dbRowID, done) => {
   // here is a good place to look up user data in database using
   // dbRowID. Put whatever you want into an object. It ends up
   // as the property "user" of the "req" object.
-  let userData = {userData: "data from db row goes here"};
+  let userData = {};
   db.all(`SELECT * FROM user WHERE google_id = '${dbRowID}'`, (err, rows) => {
-    userData = rows[0];
+    if (rows[0]) { userData = rows[0];} 
     done(null, userData);
   })
 });
