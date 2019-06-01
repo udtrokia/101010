@@ -57,10 +57,7 @@ const db = new sqlite.Database('flipcard.db', createTable);
 
 function insertCard(card) {
   // console.log(card)
-  db.run(`INSERT INTO card (answer, riddle, seen, correct) VALUES ('${card.answer}', '${card.riddle}', '${card.seen}', '${card.correct}')`);
-  // db.run(`INSERT INTO card (answer riddle seen correct) VALUES ('${card.answer}', '${card.riddle}', '${card.seen}', '${card.correct}')`, (err) => {
-  //   console.log(err);
-  // });
+  db.run(`INSERT INTO card (answer, riddle, seen, correct) VALUES ('${card.answer}', '${card.riddle}', '${card.seen}', '${card.correct}')`, err => {});
 }
 
 function createTable() {
@@ -180,27 +177,23 @@ app.get('/userinfo', isAuthenticated, function(req, res) {
   res.json(req.user)
 })
 
+app.get('/cards', isAuthenticated, (req, res) => {
+  db.all('SELECT * FROM card', (err, rows) => {
+    res.send(rows)
+  })
+})
+
 app.get('/update_seen', isAuthenticated, (req, res) => {
-  db.get(`SELECT * FROM user WHERE google_id = '${req.user.google_id}'`, (err, row) => {
-    db.run(`UPDATE user SET seen = ${row.seen + 1} WHERE google_id = '${req.user.google_id}'`, (err, ret) => {
-      if (err == null) {
-	res.json({code: true});
-      } else {
-	res.json({code: false});
-      }
-    });
-  })  
+  let query = req.query;
+  db.run(`UPDATE card SET seen = ${+ query.seen + 1} WHERE answer = '${query.answer}'`, (err, ret) => {
+    console.log(err);
+  })
 })
 
 app.get('/update_correct', isAuthenticated, (req, res) => {
-  db.get(`SELECT * FROM user WHERE google_id = '${req.user.google_id}'`, (err, row) => {
-    db.run(`UPDATE user SET correct = ${row.correct + 1} WHERE google_id = '${req.user.google_id}'`, (err, ret) => {
-      if (err == null) {
-	res.json({code: true});
-      } else {
-	res.json({code: false});
-      }
-    });
+  let query = req.query;
+  db.run(`UPDATE card SET correct = ${+ query.correct + 1} WHERE answer = '${query.answer}'`, (err, ret) => {
+    console.log(err);
   })  
 })
 

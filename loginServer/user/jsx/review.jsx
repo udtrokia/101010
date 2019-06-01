@@ -9,53 +9,6 @@
 
 const cardContainer = document.querySelector('.react-card');
 
-let vbs = [{
-  seen: 0,
-  correct: 0,
-  score: 15,
-  answer: 'starting',
-  riddle: 'What 8 letter word can have a letter taken away and it still makes a word. Take another letter away and it still makes a word. Keep on doing that until you have one letter left. What is the word?'
-}, {
-  seen: 0,
-  correct: 0,
-  answer: 'Racecar',
-  riddle: 'What 7 letter word is spelled the same way backwards and forewards?'
-}, {
-  correct: 0,
-  answer: 'NOON',
-  riddle: 'What 4-letter word can be written forward, backward or upside down, and can still be read from left to right?'
-}, {
-  seen: 0,
-  correct: 0,
-  answer: 'SWIMS',
-  riddle: 'What 5 letter word typed in all capital letters can be read the same upside down?'
-}, {
-  seen: 0,
-  correct: 0,
-  answer: 'Alphabet',
-  riddle: 'What word contains all of the twenty six letters?'
-}, {
-  seen: 0,
-  correct: 0,
-  answer: 'Ton',
-  riddle: 'Foward I am heavy, but backward I am not. What am I?',
-}, {
-  seen: 0,
-  correct: 0,
-  answer: 'Dozens',
-  riddle: 'I am six letters. When you take one away I am twelve. What am I?'
-}, {
-  seen: 0,
-  correct: 0,
-  answer: 'Queue',
-  riddle: 'What English word retains the same pronunciation, even after you take away four of its five letters?'
-}, {
-  seen: 0,
-  correct: 0,
-  answer: 'Heroine',
-  riddle: 'There is a word in the English language in which the first two letters signify a male, the first three letters signify a female, the first four signify a great man, and the whole word, a great woman. What is the word?'
-}];
-
 // React component for form inputs
 class CardInput extends React.Component {
   state = { text: '' }
@@ -128,17 +81,26 @@ class Card extends React.Component {
     sfs: '',
     cbs: '',
     user: '',
+    score: 0
   }
 
-  componentWillMount() {
+  componentDidMount() {
+    fetch('/cards').then(r => {
+      return r.json()
+    }).then(r => {
+      this.setState({
+	ptr: 0,
+	vbs: r,
+	score: this.score(r[0])
+      })
+    })    
+    
     fetch('/userinfo').then( r => {
       return r.json()
     }).then(j => {
       this.setState({
 	user: j.first_name,
-	vbs: vbs,
-	ptr: 0,
-	answer: vbs[0].answer
+	answer: this.state.vbs[0].answer
       })
     })
   }
@@ -167,32 +129,45 @@ class Card extends React.Component {
     this.setState({ text: e.target.value })
   }
 
-  /* next card */
-  nc() {
-    let card = this.state.vbs[this.state.ptr]
-    
+  /* score */
+  score(card) {
     let correct = card.correct;
-    let seen = card.seen;
+    let seen = card.seen + 1;
     let max = Math.max;
+
     let score = Math.floor(
       max(1, 5 - correct)
 	+ max(1,5-seen)
 	+ 5 * ((seen-correct)/seen)
     );
-    
+
+    console.log(score);
+    return score;
+  }
+  
+  /* next card */
+  nc() {
     let random = Math.floor(Math.random() * 15);
     let card_ptr = Math.floor(Math.random() * 9);
-    while (random > this.state.vbs[card_ptr].score) {
+    let score = this.score(this.state.vbs[card_ptr]);
+    
+    while (random > score) {
       random = Math.floor(Math.random() * 15);
       card_ptr = Math.floor(Math.random() * 9);
+      score = this.score(this.state.vbs[card_ptr]);
     }
 
+    this.setState({
+      score: score
+    });
+    
     return card_ptr;
   }
   
   handleFlip(e) {
+    let card = this.state.vbs[this.state.ptr];
     if (e.key == 'Enter') {
-      fetch(`/update_seen`)
+      fetch(`/update_seen?answer=${card.answer}&seen=${card.seen}`)
 	.then(r => {
 	  return r.json()
 	}).then(r => {
@@ -205,7 +180,7 @@ class Card extends React.Component {
       });
 
       if (this.state.answer == 'Correct!') {
-	fetch(`/update_correct`)
+	fetch(`/update_correct?answer=${card.answer}&correct=${card.correct}`)
 	  .then(r => {
 	    return r.json();
 	  })
@@ -224,17 +199,19 @@ class Card extends React.Component {
       }, 2000)
 
       setTimeout(() => {
-	this.setState({
-	  sfs: '',
-	  cbs: '',
-	  answer: this.state.vbs[this.state.ptr].answer,
-	})	
+	fetch('/cards').then(r => r.json()).then(r => {
+	  this.setState({
+	    sfs: '',
+	    cbs: '',
+	    vbs: r,
+	    answer: this.state.vbs[this.state.ptr].answer,
+	  })	
+	})
       }, 3000)
     }
   }
   
   render() {
-    console.log(this.state)
     return(
       <div style={{margin: '0 2rem'}}>
 	<div className='card-container' onKeyPress={this.handleFlip.bind(this)}>
@@ -254,7 +231,7 @@ class Card extends React.Component {
 	    Correct: {this.state.vbs[this.state.ptr].correct}
 	  </div>
 	  <div style={{textAlign: 'right'}}>
-	    {this.state.vbs[this.state.ptr].score} <br/>
+	    {this.state.score} <br/>
 	    {this.state.user}
 	  </div>
 	</div>
