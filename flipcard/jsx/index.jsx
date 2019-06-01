@@ -7,7 +7,6 @@
    It was modified for ECS 162 by Nina Amenta, May 2019.
  */
 
-
 const cardContainer = document.querySelector('.react-card');
 
 const vbs = [{
@@ -173,19 +172,29 @@ class Card extends React.Component {
       return;
     }
     if (e.key == 'Enter') {
+      let correct = this.state.correct;
+      let seen = this.state.currentSeen;
+      let max = Math.max;
+      let score = Math.floor(
+	max(1, 5 - correct)
+	  + max(1,5-seen)
+	  + 5 * ((seen-correct)/seen)
+      );
+      
       this.setState({
-	currentSeen: 15
-      });
-      if (this.state.answer == 'Correct!') {
-	this.setState({
-	  correct: this.state.corrent + 1
-	})
-      }
-      this.setState({
+	currentSeen: 15,
 	sfs: 'side-front',
 	cbs: 'card-body',
 	seen: this.state.seen + 1
-      })
+      });
+
+      if (this.state.answer == 'Correct!') {
+	this.setState({
+	  correct: this.state.correct + 1,
+	  score: this.state.score + score,
+	})
+      }
+
       setTimeout(() => {
 	this.setState({
 	  sfs: 'hidden',
@@ -196,11 +205,13 @@ class Card extends React.Component {
 	  this.setState({ ptr: this.state.ptr + 1 })
 	}
       }, 2000)
+
       setTimeout(() => {
 	this.setState({
 	  sfs: '',
 	  cbs: '',
-	  answer: vbs[this.state.ptr].answer
+	  answer: vbs[this.state.ptr].answer,
+	  currentSeen: 15
 	})	
       }, 3000)
     }
