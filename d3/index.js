@@ -27,7 +27,7 @@ function csv(handler) {
       }
 
       let lunch = e['lunch'];
-      if (re.match(/free/)) {
+      if (lunch.match(/free/)) {
 	fr.push(e);
       } else {
 	standard.push(e);
@@ -119,6 +119,47 @@ class Pie {
 	return ["A", "B", "C", "D", "E"][i];
       })
   }
+
+  lunch(data) {
+    let raw = data;
+    data = data.lunch.map(e => e.length);
+
+    let {
+      svg, pie, arc, labelArc, color
+    } = Pie._pre();
+
+    var g = svg.selectAll(".arc")
+      .data(pie(data))
+      .enter().append("g")
+      .attr("class", "arc");
+
+    g.append("path")
+      .attr("d", arc)
+      .style("fill", function(d) {
+	return color(d.data)
+      })
+      .on("mouseover", (d, i) => {
+	let _data = {};
+    	_data.lunch = [];
+    	_data.lunch[0] = raw.lunch[i];
+    	document.querySelector('#bar').innerHTML = '';
+
+	if (i == 1) {
+	  new Bar().line(_data);
+	} else {
+	  new Bar().box(_data);
+	}
+      })
+
+    g.append("text")
+      .attr("transform", function(d) {
+	return "translate(" + labelArc.centroid(d) + ")";
+      })
+      .attr("dy", ".35em")
+      .text(function(d, i) {
+	return ["standard", "free/reduced"][i];
+      })
+  }
 }
 
 class Bar {
@@ -134,7 +175,15 @@ class Bar {
     let y = d3.scaleLinear()
       .range([height, 0]);
 
-    return { width, height, margin, x, y };
+    let svg = d3.select("#bar")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", 
+        "translate(" + margin.left + "," + margin.top + ")"
+      );
+
+    return { width, height, margin, x, y, svg };
   }
 
   static _averange(data) {
@@ -158,17 +207,9 @@ class Bar {
   score(data) {
     data = data.groups[0];
 
-    let { width, height, margin, x, y } = Bar._pre();
-
+    let { width, height, margin, x, y, svg } = Bar._pre();
     let scores = Bar._averange(data);
     
-    var svg = d3.select("#bar")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", 
-        "translate(" + margin.left + "," + margin.top + ")");
-
     x.domain(['math', 'reading', 'writing']);
     y.domain([d3.min(scores) - 5, d3.max(scores) + 5]);
 
@@ -188,34 +229,142 @@ class Bar {
 	return height - y(scores[i]);
       });
 
-    // add the x Axis
     svg.append("g")
       .attr("transform",
 	"translate(0," + height + ")"
       )
       .call(d3.axisBottom(x));
 
-    // add the y Axis
     svg.append("g")
       .call(d3.axisLeft(y))
+  }
+
+  line(data) {
+    data = data.lunch[0];
+
+    let { width, height, margin, x, y, svg } = Bar._pre();
+    let scores = Bar._averange(data);
+    
+    x.domain(['math', 'reading', 'writing']);
+    y.domain([d3.min(scores) - 5, d3.max(scores) + 5]);
+
+    let valueline = d3.line()
+      .x(function(d, i) {
+	return x(['math', 'reading', 'writing'][i]);
+      })
+      .y(function(d, i) {
+	return y(scores[i]);
+      });
+    
+    svg.append("path")
+      .data([scores])
+      .attr("class", "line")
+      .attr("d", valueline)
+      .attr("transform", `translate(${x.bandwidth() / 3 + margin.right}, 0)`)
+
+    svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+    svg.append("g")
+      .call(d3.axisLeft(y));
+  }
+
+  box(data) {
+    data = data.lunch[0];
+
+    let { height, width, margin, x, y, svg } = Bar._pre();
+    let scores = Bar._averange(data);
+    
+    x.domain(['math', 'reading', 'writing']);
+    y.domain([d3.min(scores) - 5, d3.max(scores) + 5]);
+    
+    svg.append("g").call(d3.axisLeft(y));
+    svg.append("g").attr("transform",
+      "translate(0," + height + ")"
+    ).call(d3.axisBottom(x));
+
+    width = 20;
+    let c = ['math', 'reading', 'writing'];
+    c.map((d, i) => {
+      let current = scores[i]
+      let range = [current - 2, current, current + 2];
+      
+      let q1 = d3.quantile(range, .15)
+      let median = d3.quantile(range, .5)
+      let q3 = d3.quantile(range, .5)
+      let interQuantileRange = q3 - q1
+      let min = q1 - 1.5 * interQuantileRange
+      let max = q1 + 1.5 * interQuantileRange
+      
+      svg
+	.append("line")
+	.attr("x1", x(d))
+	.attr("x2", x(d))
+	.attr("y1", y(min) )
+	.attr("y2", y(max) )
+	.attr("stroke", "black")
+	.attr("transform", `translate(${x.bandwidth() / 3 + margin.right}, 0)`)
+
+      svg
+	.append("rect")
+	.attr("x", x(d) - width/2)
+	.attr("y", y(q3) )
+	.attr("height", (y(q1)-y(q3)) )
+	.attr("width", width )
+	.attr("stroke", "black")
+	.style("fill", "#69b3a2")
+	.attr("transform", `translate(${x.bandwidth() / 3 + margin.right}, 0)`)
+
+      svg
+	.selectAll("toto")
+	.data([min, median, max])
+	.enter()
+	.append("line")
+	.attr("x1", x(d)-width/2)
+	.attr("x2", x(d)+width/2)
+	.attr("y1", function(d){ return(y(d))} )
+	.attr("y2", function(d){ return(y(d))} )
+	.attr("stroke", "black")
+	.attr("transform", `translate(${x.bandwidth() / 3 + margin.right}, 0)`)
+    })
   }
 }
 
 
-/* Global */
-(function() {
-  const sel = document.querySelector("#sel");
-
+/* score */
+function score() {
+  document.querySelector("#bar").innerHTML = '';
+  document.querySelector("#pie").innerHTML = '';
+  
   let bar = new Bar();
   let pie = new Pie();
   
   csv(bar.score);
   csv(pie.score);
-})();
+}
 
-/* selector */
-(function(){
+function lunch() {
+  document.querySelector("#bar").innerHTML = '';
+  document.querySelector("#pie").innerHTML = '';
+  
+  let bar = new Bar();
+  let pie = new Pie();
+  
+  csv(bar.box);
+  csv(pie.lunch);
+}
+
+/* Global */
+!(function() {
+  score();
+
+  const sel = document.querySelector("#sel");
   sel.onchange = () => {
-    console.log(sel.value)
+    if(sel.value == "score") {
+      score();
+    } else {
+      lunch();
+    }
   }
 })();

@@ -1,0 +1,23 @@
+h1 {
+    margin: 5rem auto;
+    text-decoration: underline;
+    
+    text-align: center;
+}
+
+body {
+    max-width:  960;
+    margin: 0 auto;
+}
+
+section {
+    text-align: center;
+    border: solid 2px black;
+    padding: 5rem 0 ;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+}
