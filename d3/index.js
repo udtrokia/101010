@@ -1,16 +1,3 @@
-function mouseover(mode) {
-  switch(mode) {
-    case 'groupData':
-      return function() {
-	
-      }
-      break;
-    default:
-      return;
-  }
-}
-
-
 /* csv */
 function csv(handler, options) {
   d3.csv("data.csv", (err, data) => {
@@ -44,11 +31,12 @@ function csv(handler, options) {
     };
 
     if (options.type == 'axis') {
-      if (options.init) {
+      
+      if (options.multi) {
+      	handler(dataset[options.data]);
+      } else {
 	let mode = Object.keys(dataset[options.data])[0];
 	handler(dataset[options.data][mode]);
-      } else {
-	handler(dataset[options.data][options.mode]);
       }
     } else {
       handler(dataset[options.data], options.chart);
@@ -126,7 +114,11 @@ class Pie {
       })
       .attr("dy", ".35em")
       .text(function(d, i) {
-	return options[i];
+	let t = options[i];
+	if (t.match(/group/)) {
+	  t = t.split(' ')[1];
+	}
+	return t;
       })
   }
 
@@ -192,17 +184,10 @@ class Axis {
     return [ m, r, w ];
   }
   
-  static _pre(data) {
+  static _pre(data, line) {
     let margin = {top: 20, right: 20, bottom: 30, left: 40},
       width = 480 - margin.left - margin.right,
       height = 250 - margin.top - margin.bottom;
-
-    // set the ranges
-    let x = d3.scaleBand()
-      .range([0, width])
-      .padding(0.1);
-    let y = d3.scaleLinear()
-      .range([height, 0]);
 
     let svg = d3.select("#axis")
       .attr("width", width + margin.left + margin.right)
@@ -212,10 +197,20 @@ class Axis {
         "translate(" + margin.left + "," + margin.top + ")"
       );
 
+    let x = d3.scaleBand()
+      .range([0, width])
+      .padding(0.1);
+    let y = d3.scaleLinear()
+      .range([height, 0]);
+
     let scores = Axis._averange(data);
     
     x.domain(['math', 'reading', 'writing']);
-    y.domain([d3.min(scores) - 5, d3.max(scores) + 5]);
+    if (!line) {
+      y.domain([d3.min(scores) - 5, d3.max(scores) + 5]);
+    } else {
+      y.domain([58, 78]);
+    }
 
     svg.append("g").call(d3.axisLeft(y));
     svg.append("g").attr("transform",
@@ -246,27 +241,29 @@ class Axis {
   }
 
   static line(data) {
-    data = data.lunch[0];
+    let { width, height, margin, x, y, svg, scores } = Axis._pre(Object.values(data)[0], true);
 
-    let { width, height, margin, x, y, svg, scores } = Axis._pre();
-
-    let valueline = d3.line()
-      .x(function(d, i) {
-	return x(['math', 'reading', 'writing'][i]);
-      })
-      .y(function(d, i) {
-	return y(scores[i]);
-      });
-    
-    svg.append("path")
-      .data([scores])
-      .attr("class", "line")
-      .attr("d", valueline)
-      .attr("transform", `translate(${x.bandwidth() / 3 + margin.right}, 0)`)
+    Object.values(data).map((e, i) => {
+      scores = Axis._averange(e);
+      let valueline = d3.line()
+	.x(function(d, i) {
+	  return x(['math', 'reading', 'writing'][i]);
+	})
+	.y(function(d, i) {
+	  return y(scores[i]);
+	});
+      
+      svg.append("path")
+	.data([scores])
+	.attr("class", "line")
+	.attr("d", valueline)
+	.attr("transform", `translate(${x.bandwidth() / 3 + margin.right}, 0)`)
+    })    
   }
 
   static box(data) {
-    let { height, width, margin, x, y, svg, scores} = Axis._pre();
+    let { height, width, margin, x, y, svg, scores} = Axis._pre(data);
+    let options = ['math', 'reading', 'writing'];
     
     width = 20;
     options.map((d, i) => {
@@ -314,46 +311,52 @@ class Axis {
   }
 }
 
-
-/* score */
-function score() {
-  document.querySelector("#pie").innerHTML = '';
-  document.querySelector("#axis").innerHTML = '';
-  
-  let pie = new Pie();
-  let axis = new Axis();
-  
-  csv(Axis.bar, {
-    type: 'axis',
-    data: 'groupData',
-    init: true
-  });
+function magic(dataMode, chartMode) {
+  if (dataMode == 'groupData') {
+    csv(Axis.bar, {
+      type: 'axis',
+      data: dataMode,
+    });    
+  } else {    
+    csv(Axis.line, {
+      type: 'axis',
+      data: dataMode,
+      multi: true
+    });
+  }
 
   csv(Pie.draw, {
     type: 'pie',
-    data: 'groupData',
-    chart: 'bar',
-  });
-}
-
-function lunch() {
-  document.querySelector("#pie").innerHTML = '';
-  document.querySelector("#axis").innerHTML = '';
-
-  csv(Pie.lunch);
-  csv(Axis.line);
+    data: dataMode,
+    chart: chartMode,
+  });  
 }
 
 /* Global */
 !(function() {
-  score();
+  magic('groupData', 'bar');
 
   const sel = document.querySelector("#sel");
   sel.onchange = () => {
-    if(sel.value == "score") {
-      score();
-    } else {
-      lunch();
+    document.querySelector("#pie").innerHTML = '';
+    document.querySelector("#axis").innerHTML = '';
+
+    switch(sel.value) {
+      case 'score':
+	magic('groupData', 'bar');	
+	break;
+      case 'lunch':
+	magic('lunchData', 'box');
+	break;
+      case 'parental level of education':
+	magic('eduData', 'box');
+	break;
+      case 'test preparation course':
+	magic('courseData', 'box');
+	break;
+      default:
+	magic('lunchData', 'box');
+	break;
     }
   }
 })();
