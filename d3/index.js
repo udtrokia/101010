@@ -121,48 +121,6 @@ class Pie {
 	return t;
       })
   }
-
-  // static lunch(data, options) {
-  //   let raw = data;
-  //   data = data.lunch.map(e => e.length);
-  //   options = ["standard", "free/reduced"];
-  //   
-  //   let {
-  //     svg, pie, arc, labelArc, color
-  //   } = Pie._pre();
-  // 
-  //   var g = svg.selectAll(".arc")
-  //     .data(pie(data))
-  //     .enter().append("g")
-  //     .attr("class", "arc");
-  // 
-  //   g.append("path")
-  //     .attr("d", arc)
-  //     .style("fill", function(d) {
-  // 	return color(d.data)
-  //     })
-  //     .on("mouseover", (d, i) => {
-  // 	let _data = {};
-  //   	_data.lunch = [];
-  //   	_data.lunch[0] = raw.lunch[i];
-  //   	document.querySelector('#bar').innerHTML = '';
-  // 
-  // 	if (i == 1) {
-  // 	  new Bar().line(_data);
-  // 	} else {
-  // 	  new Bar().box(_data);
-  // 	}
-  //     })
-  // 
-  //   g.append("text")
-  //     .attr("transform", function(d) {
-  // 	return "translate(" + labelArc.centroid(d) + ")";
-  //     })
-  //     .attr("dy", ".35em")
-  //     .text(function(d, i) {
-  // 	return options[i];
-  //     })
-  // }
 }
 
 class Axis {
@@ -336,14 +294,21 @@ function magic(dataMode, chartMode) {
 !(function() {
   magic('groupData', 'bar');
 
+  const tt = document.querySelector("#title");
   const sel = document.querySelector("#sel");
   sel.onchange = () => {
     document.querySelector("#pie").innerHTML = '';
     document.querySelector("#axis").innerHTML = '';
 
+    if (sel.value === 'score') {
+      tt.innerHTML = 'Student Score';
+    } else {
+      tt.innerHTML = sel.value + ' ' + 'on Student Score';
+    }
+    
     switch(sel.value) {
       case 'score':
-	magic('groupData', 'bar');	
+	magic('groupData', 'bar');
 	break;
       case 'lunch':
 	magic('lunchData', 'box');
