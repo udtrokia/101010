@@ -21,3 +21,7 @@ section {
   stroke: steelblue;
   stroke-width: 2px;
 }
+
+text {
+    font-size: 0.8rem;
+}

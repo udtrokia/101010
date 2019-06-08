@@ -1,3 +1,9 @@
+/* Colors */
+const COLORS = [
+  'rgb(127, 201, 127)', 'rgb(190, 174, 212)', 'rgb(253, 192, 134)',
+  'rgb(255, 255, 153)', 'rgb(120, 108, 176)', 'rgb(240, 2, 127)'
+]
+
 /* csv */
 function csv(handler, options) {
   d3.csv("data.csv", (err, data) => {
@@ -31,7 +37,6 @@ function csv(handler, options) {
     };
 
     if (options.type == 'axis') {
-      
       if (options.multi) {
       	handler(dataset[options.data]);
       } else {
@@ -39,7 +44,7 @@ function csv(handler, options) {
 	handler(dataset[options.data][mode]);
       }
     } else {
-      handler(dataset[options.data], options.chart);
+      handler(dataset[options.data], options.chart, options.data);
     }
   });
 }
@@ -83,7 +88,7 @@ class Pie {
     return ret;
   }
 
-  static draw(data, chart) {
+  static draw(data, chart, dataMode) {
     let raw = data;
     let options = Object.keys(data);
     
@@ -100,12 +105,18 @@ class Pie {
 
     g.append("path")
       .attr("d", arc)
-      .style("fill", function(d) {
-	return color(d.data)
+      .style("fill", function(d, i) {
+	return COLORS[i]
       })
       .on("mouseover", (d, i) => {
      	document.querySelector('#axis').innerHTML = '';
      	Axis[chart](data[options[i]]);
+      })
+      .on("mouseout", (d, i) => {
+	if (chart === 'box') {
+	  document.querySelector('#axis').innerHTML = '';
+	  csv(Axis.line, { type: 'axis', data: dataMode, multi: true });
+	}
       })
 
     g.append("text")
@@ -180,14 +191,15 @@ class Axis {
 
   static bar(data) {
     let { width, height, margin, x, y, svg, scores} = Axis._pre(data);
-
+    let options = ['math', 'reading', 'writing'];
+    
     svg.selectAll(".bar")
       .data(scores)
       .enter().append("rect")
       .style("fill", "steelblue")
       .attr("class", "bar")
       .attr("x", function(d, i) {
-    	return x(['math', 'reading', 'writing'][i]);
+    	return x(options[i]);
       })
       .attr("width", x.bandwidth())
       .attr("y", function(d, i) {
@@ -195,28 +207,44 @@ class Axis {
       })
       .attr("height", function(d, i) {
     	return height - y(scores[i]);
-      });
+      })
+    
+    svg.selectAll('.text')
+      .data(scores)
+      .enter()
+      .append('text')
+      .attr("x", function(d,i){ return x(options[i])})
+      .attr("y",function(d, i){ return y(scores[i])})
+      .text(function(d, i){ return Math.floor(scores[i])})
+      .attr("transform", `translate(${x.bandwidth() / 4 + margin.right}, -10)`);
   }
 
   static line(data) {
     let { width, height, margin, x, y, svg, scores } = Axis._pre(Object.values(data)[0], true);
-
+    let options = ['math', 'reading', 'writing'];    
+    
     Object.values(data).map((e, i) => {
       scores = Axis._averange(e);
       let valueline = d3.line()
-	.x(function(d, i) {
-	  return x(['math', 'reading', 'writing'][i]);
-	})
-	.y(function(d, i) {
-	  return y(scores[i]);
-	});
+	.x(function(d, i) { return x(options[i]) })
+	.y(function(d, i) { return y(scores[i]) });
       
       svg.append("path")
 	.data([scores])
-	.attr("class", "line")
+	.attr('class', 'line')
 	.attr("d", valueline)
+	.style('stroke', COLORS[i])
 	.attr("transform", `translate(${x.bandwidth() / 3 + margin.right}, 0)`)
-    })    
+
+      svg.selectAll('.text')
+	.data(scores)
+	.enter()
+	.append('text')
+	.attr("x", function(d,i){ return x(options[i])})
+	.attr("y",function(d, i){ return y(scores[i])})
+	.text(function(d, i){ return Math.floor(scores[i])})
+	.attr("transform", `translate(${x.bandwidth() / 4 + margin.right}, -10)`);
+    })
   }
 
   static box(data) {
@@ -265,6 +293,15 @@ class Axis {
 	.attr("y2", function(d){ return(y(d))} )
 	.attr("stroke", "black")
 	.attr("transform", `translate(${x.bandwidth() / 3 + margin.right}, 0)`)
+
+      svg.selectAll('.text')
+	.data(scores)
+	.enter()
+	.append('text')
+	.attr("x", function(d,i){ return x(options[i])})
+	.attr("y",function(d, i){ return y(scores[i])})
+	.text(function(d, i){ return Math.floor(scores[i])})
+	.attr("transform", `translate(${x.bandwidth() / 4 + margin.right}, -20)`);
     })
   }
 }
