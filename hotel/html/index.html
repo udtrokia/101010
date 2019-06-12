@@ -7,13 +7,22 @@
       <option value="Ford" />
       <option value="Volvo" />
     </datalist>
-    <a href="#">Logout</a>
-    <a href="#">Login</a>
-    <a href="#">Register</a>
-    <a href="#">Detail</a>
-    <a href="#">Home</a>
+    <a id='login' href="#">Login</a>
+    <a id='detail' href="#">Detail</a>
+    <a id='home' href="#">Home</a>
     <input type='text' placeholder='search hotels...' list="hotels"/>
   </nav>
+  <center id='account'>
+    <fieldset class='account-container'>
+      <button class='close'>close</button>
+      <input class='account-username' placeholder='username' type='text'/>
+      <input class='account-password' placeholder='password' type='text'/>
+      <row>
+	<button id='register'>Register</button>
+	<button id='login'>Login</button>
+      </row>
+    </fieldset>
+  </center>
   <main>
     <section>
       <h3 id='up-title'>The Best Rating Hotel</h3>

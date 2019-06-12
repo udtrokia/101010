@@ -39,6 +39,47 @@ nav > input {
 }
 
 /* ~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.> */
+/* account */
+#account {
+    z-index: 999;
+    position: fixed;
+    top: 20rem;
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    display: none;
+}
+
+#account > fieldset {
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    border: 1px solid black;
+    box-shadow: 5px 5px 20px #888888; 
+}
+
+#account > fieldset > input {
+    padding: 0 1rem;
+    font-size: 1.5rem;
+    width: 15rem;
+    height: 3rem;
+    margin: 1.5rem 2rem;
+}
+
+#account > fieldset > row {
+    margin-top: 1rem;
+}
+
+#account > fieldset > row > button {
+    font-size: 1.5rem;
+    background-color: white;
+    margin: 0 1rem;
+}
+
+/* ~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.>~~.> */
 /* main */
 main {
     position: relative;
